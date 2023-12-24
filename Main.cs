@@ -3,7 +3,7 @@ using Kitchen;
 using KitchenLib;
 using KitchenLib.Event;
 using KitchenData;
-using KitchenDecorOnDemand.Utils;
+using KitchenApplianceShop.Utils;
 using KitchenMods;
 using PreferenceSystem;
 using PreferenceSystem.Utils;
@@ -16,7 +16,7 @@ using System.Text;
 using UnityEngine;
 
 // Namespace should have "Kitchen" in the beginning
-namespace KitchenDecorOnDemand
+namespace KitchenApplianceShop
 {
     public class Main : IModInitializer
     {
@@ -108,18 +108,6 @@ namespace KitchenDecorOnDemand
                     .AddSpacer()
                 .ConditionalBlockerDone()
                 .AddSubmenu("Menu Settings", "menuSettings")
-                    .AddLabel("Menu Starts")
-                    .AddOption<bool>(
-                        MENU_START_OPEN_ID,
-                        true,
-                        new bool[] { false, true },
-                        new string[] { "Closed", "Opened" })
-                    .AddLabel("Starting Tab")
-                    .AddOption<string>(
-                        MENU_START_TAB_ID,
-                        SpawnType.Decor.ToString(),
-                        Enum.GetNames(typeof(SpawnType)),
-                        Enum.GetNames(typeof(SpawnType)))
                     .AddConditionalBlocker(() => Session.CurrentGameNetworkMode != GameNetworkMode.Host)
                         .AddLabel("Can Spawn")
                         .AddOption<bool>(
@@ -131,13 +119,6 @@ namespace KitchenDecorOnDemand
                     .AddSpacer()
                     .AddSpacer()
                 .SubmenuDone()
-                .AddButton("Show/Hide Menu", delegate(int _)
-                {
-                    if (_spawnGUI != null)
-                    {
-                        _spawnGUI.showMenu = !_spawnGUI.showMenu;
-                    }                        
-                })
                 .AddSpacer()
                 .AddSpacer();
 
@@ -213,7 +194,7 @@ namespace KitchenDecorOnDemand
         private string _hoveredName = null;
         Texture2D _hoveredTexture = null;
 
-        private SpawnRequestView spawnRequestView;
+        //private SpawnRequestView spawnRequestView;
 
         private readonly HashSet<int> DISABLED_APPLIANCES = new HashSet<int>()
         {
@@ -233,147 +214,17 @@ namespace KitchenDecorOnDemand
 
         public void Update()
         {
-            if (spawnRequestView == null)
-            {
-                spawnRequestView = GameObject.FindObjectOfType<ActiveSpawnRequestView>()?.LinkedView;
-            }            
-            if (Input.GetKeyDown(KeyCode.F3))
-            {
-                showMenu = !showMenu;
-            }
 
-            if (decorNames == null)
-            {
-                decorNames = new List<string>();
-                foreach (Decor decor in GameData.Main.Get<Decor>().Where(x => x.IsAvailable))
-                {
-                    string decorName = $"{decor.name}";
-
-                    if (!decorNames.Contains(decorName))
-                    {
-                        decors.Add(decorName, decor.ID);
-                        decorNames.Add(decorName);
-                    }
-                }
-                decorNames.Sort();
-            }
-
-            if (applianceNames == null)
-            {
-                applianceNames = new List<string>();
-                foreach (Appliance appliance in GameData.Main.Get<Appliance>())
-                {
-                    if (DISABLED_APPLIANCES.Contains(appliance.ID) ||
-                        appliance.Properties.Select(x => x.GetType()).Contains(typeof(CImmovable)))
-                        continue;
-                    string applianceName = $"{(appliance.Name.IsNullOrEmpty() ? appliance.name : appliance.Name)}";
-                    for (int i = 1; i < MAX_DUPLICATE_NAMES + 1; i++)
-                    {
-                        string tempName = $"{applianceName}{(i > 1 ? i.ToString() : "")}";
-                        if (!applianceNames.Contains(tempName))
-                        {
-                            appliances.Add(tempName, appliance.ID);
-                            applianceNames.Add(tempName);
-                            break;
-                        }
-                    }
-                }
-                applianceNames.Sort();
-            }
         }
 
         private int? _windowID = null;
         public void OnGUI()
         {
-            if (showMenu)
-            {
-                if (_windowID == null)
-                {
-                    _windowID = Main.GetInt32HashCode(Main.MOD_GUID);
-                }
-                windowRect = GUILayout.Window(_windowID.Value, windowRect, SpawnWindow, "Stuff on Demand", GUILayout.Width(WINDOW_WIDTH), GUILayout.Height(WINDOW_HEIGHT));
-            }
+
         }
 
         public void SpawnWindow(int windowID)
         {
-            GUILayout.Space(2);
-            foreach (SpawnType mode in Enum.GetValues(typeof(SpawnType)))
-            {
-                if (GUILayout.Button(mode.ToString()))
-                {
-                    currentMode = mode;
-                }
-            }
-            List<string> gdoNames;
-            Dictionary<string, int> gdoDict;
-            Action<int> spawnMethod = null;
-            switch (currentMode)
-            {
-                case SpawnType.Appliance:
-                    gdoNames = applianceNames;
-                    gdoDict = appliances;
-                    if (spawnRequestView != null)
-                        spawnMethod = spawnRequestView.Request<Appliance>;
-                    break;
-                case SpawnType.Decor:
-                default:
-                    gdoNames = decorNames;
-                    gdoDict = decors;
-                    if (spawnRequestView != null)
-                        spawnMethod = spawnRequestView.Request<Decor>;
-                    break;
-            }
-            GUILayout.Space(1);
-            GUILayout.Label("Search:");
-            searchText = GUILayout.TextField(searchText);
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition, false, false, GUIStyle.none, GUI.skin.verticalScrollbar);
-            for (int i = 0; i < gdoNames.Count; i++)
-            {
-                if (string.IsNullOrEmpty(searchText) || gdoNames[i].ToLower().Contains(searchText.ToLower()))
-                {
-                    if (GUILayout.Button(new GUIContent(gdoNames[i], gdoNames[i])))
-                    {
-                        if (spawnMethod != null)
-                            spawnMethod(gdoDict[gdoNames[i]]);
-                    }
-                }
-            }
-            GUILayout.EndScrollView();
-
-            string hoveredName = GUI.tooltip;
-            if (hoveredName != _hoveredName)
-            {
-                _hoveredName = hoveredName;
-                _hoveredTexture = null;
-                if (!hoveredName.IsNullOrEmpty())
-                {
-                    switch (currentMode)
-                    {
-                        case SpawnType.Appliance:
-                            _hoveredTexture = PrefabSnapshotUtils.GetApplianceSnapshot(gdoDict[hoveredName]);
-                            break;
-                        case SpawnType.Decor:
-                            _hoveredTexture = PrefabSnapshotUtils.GetDecorSnapshot(gdoDict[hoveredName]);
-                            break;
-                    }
-                }
-            }
-
-            GUILayout.Label("Press F3 to toggle this menu.");
-            if (_hoveredTexture != null)
-            {
-                Vector2 mousePos = Event.current.mousePosition;
-                Vector2 rectPos = new Vector2(mousePos.x, mousePos.y);
-                Vector2 rectSize = Vector2.one * 100f;
-                if (mousePos.x > WINDOW_WIDTH / 2f)
-                    rectPos.x = mousePos.x - rectSize.x;
-                if (mousePos.y > WINDOW_HEIGHT / 2f)
-                    rectPos.y = mousePos.y - rectSize.y;
-                GUI.DrawTexture(new Rect(rectPos, rectSize), _hoveredTexture, ScaleMode.ScaleToFit);
-            }
-            GUI.DragWindow();
-            
         }
     }
 }

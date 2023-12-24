@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace KitchenDecorOnDemand.Patches
+namespace KitchenApplianceShop.Patches
 {
     [HarmonyPatch]
     static class GameDataConstructor_Patch

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
 
-namespace KitchenDecorOnDemand
+namespace KitchenApplianceShop
 {
     public class StripRequest
     {

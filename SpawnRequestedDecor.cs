@@ -5,7 +5,7 @@ using System;
 using Unity.Entities;
 using UnityEngine;
 
-namespace KitchenDecorOnDemand
+namespace KitchenApplianceShop
 {
     public class SpawnRequestedDecor : SpawnHandlerSystemBase, IModSystem
     {

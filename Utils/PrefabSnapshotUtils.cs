@@ -6,7 +6,7 @@ using Unity.Entities;
 using UnityEngine;
 using static UnityEngine.InputSystem.LowLevel.InputStateHistory;
 
-namespace KitchenDecorOnDemand.Utils
+namespace KitchenApplianceShop.Utils
 {
     public static class PrefabSnapshotUtils
     {

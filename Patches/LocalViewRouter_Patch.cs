@@ -2,7 +2,7 @@
 using Kitchen;
 using UnityEngine;
 
-namespace KitchenDecorOnDemand.Patches
+namespace KitchenApplianceShop.Patches
 {
     [HarmonyPatch]
     static class LocalViewRouter_Patch

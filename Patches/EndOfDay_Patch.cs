@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
 using Kitchen;
 
-namespace KitchenDecorOnDemand.Patches
+namespace KitchenApplianceShop.Patches
 {
     [HarmonyPatch(typeof(EndOfDayPopupView))]
     public static class EndOfDayPopupViewPatch

@@ -4,7 +4,7 @@ using KitchenMods;
 using System;
 using UnityEngine;
 
-namespace KitchenDecorOnDemand
+namespace KitchenApplianceShop
 {
     public enum SpawnApplianceMode
     {

@@ -4,7 +4,7 @@ using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
 
-namespace KitchenDecorOnDemand
+namespace KitchenApplianceShop
 {
     [UpdateBefore(typeof(DestroyAppliancesAtDay))]
     public class EndOfDayEvent : StartOfDaySystem, IModSystem

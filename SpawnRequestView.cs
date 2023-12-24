@@ -10,7 +10,7 @@ using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
 
-namespace KitchenDecorOnDemand
+namespace KitchenApplianceShop
 {
     [StructLayout(LayoutKind.Sequential, Size = 1)]
     public struct SSpawnRequestView : IComponentData, IModComponent { }

@@ -5,7 +5,7 @@ using KitchenData;
 using System;
 using UnityEngine;
 
-namespace KitchenDecorOnDemand.Patches
+namespace KitchenApplianceShop.Patches
 {
     [HarmonyPatch]
     static class LayoutDecorView_Patch

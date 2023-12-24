@@ -8,7 +8,7 @@ using System.Linq;
 using System;
 using UnityEngine;
 
-namespace KitchenDecorOnDemand
+namespace KitchenApplianceShop
 {
     public class ApplianceMenu<T> : KLMenu<T>
     {

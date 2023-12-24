@@ -8,7 +8,7 @@ using Unity.Entities;
 using UnityEngine;
 using System.Linq;
 
-namespace KitchenDecorOnDemand
+namespace KitchenApplianceShop
 {
     public enum SpawnType
     {
@@ -77,7 +77,7 @@ namespace KitchenDecorOnDemand
                     {
                         string description = string.Format("Too expensive.\nAppliance cost = {0}\nSales Tax = {1}\nTotal = {2}"
                             , (int)(appliancePrice * Main.PrefManager.Get<float>(Main.APPLIANCE_BLUEPRINT_COST_ID))
-                            , (int)(money.Amount * Main.PrefManager.Get<float>(Main.SHOP_SERVICEFEE_ID))
+                            , (int)(money.Amount * Main.PrefManager.Get<float>(Main.SHOP_SERVICEFEE_ID) + 30)
                             , thisPurchaseCost);                        
                         ApplianceShopSystem.SelectedApplianceCost = thisPurchaseCost;
                         KitchenLib.UI.GenericPopupManager.CreatePopup("Appliance Shop", description);                        

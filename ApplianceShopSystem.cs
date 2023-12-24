@@ -8,7 +8,7 @@ using KitchenData;
 using KitchenLib.References;
 using KitchenLib.Utils;
 
-namespace KitchenDecorOnDemand
+namespace KitchenApplianceShop
 {
     public class ApplianceShopSystem : GameSystemBase
     {

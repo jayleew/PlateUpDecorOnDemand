@@ -1,7 +1,7 @@
 ﻿using Kitchen;
 using UnityEngine;
 
-namespace KitchenDecorOnDemand.Utils
+namespace KitchenApplianceShop.Utils
 {
     public static class SnapshotUtils
     {
