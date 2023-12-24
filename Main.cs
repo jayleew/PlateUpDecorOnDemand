@@ -1,5 +1,7 @@
 ﻿using HarmonyLib;
 using Kitchen;
+using KitchenLib;
+using KitchenLib.Event;
 using KitchenData;
 using KitchenDecorOnDemand.Utils;
 using KitchenMods;
@@ -18,8 +20,8 @@ namespace KitchenDecorOnDemand
 {
     public class Main : IModInitializer
     {
-        public const string MOD_GUID = "IcedMilo.PlateUp.DecorOnDemand";
-        public const string MOD_NAME = "Stuff on Demand";
+        public const string MOD_GUID = "jayleew.plateup.applianceshop";
+        public const string MOD_NAME = "Appliance Shop";
         public const string MOD_VERSION = "0.2.9";
 
         internal const string MENU_START_OPEN_ID = "menuStartOpen";
@@ -27,6 +29,7 @@ namespace KitchenDecorOnDemand
         internal const string HOST_ONLY_ID = "hostOnly2";
         internal const string APPLIANCE_SPAWN_AS_ID = "applianceSpawnAs";
         internal const string APPLIANCE_BLUEPRINT_COST_ID = "applianceBlueprintCost";
+        internal const string SHOP_SERVICEFEE_ID = "shopServiceFee";
         internal const string SPAWN_AT_ID = "spawnAt";
         internal static PreferenceSystemManager PrefManager;
 
@@ -34,9 +37,13 @@ namespace KitchenDecorOnDemand
 
         Harmony harmony;
         static List<Assembly> PatchedAssemblies = new List<Assembly>();
+        public static Dictionary<string, Dictionary<int, string>> LoadedAvailableAppliances = new();
 
         SpawnGUI _spawnGUI;
 
+        public const int DisabledEntityID = 1836107598;
+        public static string DisabledEntityName;
+        internal static int AppliancePurchases; 
         public Main()
         {
             if (harmony == null)
@@ -51,7 +58,7 @@ namespace KitchenDecorOnDemand
 
         public void PostActivate(KitchenMods.Mod mod)
         {
-            LogWarning($"{MOD_GUID} v{MOD_VERSION} in use!");
+            LogWarning($"{MOD_GUID} v{MOD_VERSION} in use!");            
 
             PrefManager = new PreferenceSystemManager(MOD_GUID, MOD_NAME);
             PrefManager
@@ -74,8 +81,15 @@ namespace KitchenDecorOnDemand
                         .AddOption<float>(
                             APPLIANCE_BLUEPRINT_COST_ID,
                             0,
-                            new float[] { 0, 0.5f, 1 },
-                            new string[] { "Free", "Half Price", "Original Price" })
+                            new float[] { 0, 0.5f, 1, 1.5f, 2 },
+                            new string[] { "Free", "Half Price", "Original Price", "One&One Half", "Double Price" })
+                        .AddSpacer()
+                        .AddLabel("Shop Service Fee")
+                        .AddOption<float>(
+                            SHOP_SERVICEFEE_ID,
+                            0,
+                            new float[] { 0, 0.1f, 0.2f },
+                            new string[] { "30", "30 + 10% Tax", "30 + 20% Tax" })                        
                         .AddSpacer()
                         .AddSpacer()
                     .SubmenuDone()
@@ -120,13 +134,24 @@ namespace KitchenDecorOnDemand
                 .AddButton("Show/Hide Menu", delegate(int _)
                 {
                     if (_spawnGUI != null)
+                    {
                         _spawnGUI.showMenu = !_spawnGUI.showMenu;
+                    }                        
                 })
                 .AddSpacer()
                 .AddSpacer();
 
             PrefManager.RegisterMenu(PreferenceSystemManager.MenuType.MainMenu);
             PrefManager.RegisterMenu(PreferenceSystemManager.MenuType.PauseMenu);
+        }
+
+        private void initPauseMenu()
+        {                        
+            ModsPreferencesMenu<PauseMenuAction>.RegisterMenu("Appliance Store", typeof(ApplianceMenu<PauseMenuAction>), typeof(PauseMenuAction));
+            Events.PreferenceMenu_PauseMenu_CreateSubmenusEvent += (s, args) =>
+            {
+                args.Menus.Add(typeof(ApplianceMenu<PauseMenuAction>), new ApplianceMenu<PauseMenuAction>(args.Container, args.Module_list));
+            };            
         }
 
         public void PreInject()
@@ -156,7 +181,7 @@ namespace KitchenDecorOnDemand
             return BitConverter.ToInt32(BitConverter.GetBytes(uint.MaxValue - num4), 0);
         }
 
-        public void PostInject() { }
+        public void PostInject() { DisabledEntityName = GameData.Main.Get<Appliance>(DisabledEntityID).Name; initPauseMenu(); }
 
         #region Logging
         public static void LogInfo(string _log) { Debug.Log($"[{MOD_NAME}] " + _log); }
@@ -211,8 +236,7 @@ namespace KitchenDecorOnDemand
             if (spawnRequestView == null)
             {
                 spawnRequestView = GameObject.FindObjectOfType<ActiveSpawnRequestView>()?.LinkedView;
-            }
-
+            }            
             if (Input.GetKeyDown(KeyCode.F3))
             {
                 showMenu = !showMenu;
