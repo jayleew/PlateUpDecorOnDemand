@@ -23,7 +23,7 @@ namespace KitchenApplianceShop
             ApplianceReferences.Countertop,
             ApplianceReferences.DirtyPlateStack,
             ApplianceReferences.Dumbwaiter,
-            ApplianceReferences.ExtraLife,
+            //ApplianceReferences.ExtraLife,
             ApplianceReferences.FloorBufferStation,
             ApplianceReferences.FloorProtector,
             ApplianceReferences.FoodDisplayStand,
@@ -41,7 +41,7 @@ namespace KitchenApplianceShop
             ApplianceReferences.RobotMop,
             ApplianceReferences.SinkNormal,
             ApplianceReferences.TableLarge,
-            ApplianceReferences.UpgradeKit,
+            ApplianceReferences.UpgradeKit,            
         };
 
 
@@ -102,6 +102,7 @@ namespace KitchenApplianceShop
             ApplianceReferences.SourceMeat,
             ApplianceReferences.SourceMilk,
             ApplianceReferences.SourceMushroom,
+            ApplianceReferences.SourceOil,
             ApplianceReferences.SourceOlive,
             ApplianceReferences.SourceOnion,
             ApplianceReferences.SourcePotato,
@@ -164,6 +165,8 @@ namespace KitchenApplianceShop
         {
             CheatMoney();
             Main.LogInfo("Loading available appliances...");
+
+            if (Main.LoadedAvailableAppliances.Count == 0) Main.PickNewSaleAppliance();
 
             Main.LoadedAvailableAppliances.Clear();
 
@@ -256,6 +259,7 @@ namespace KitchenApplianceShop
             }
             catch { };
 
+            
             return appliances;
         }
 
@@ -270,5 +274,6 @@ namespace KitchenApplianceShop
                 GoCheat = false;
             }
         }
+
     }
 }

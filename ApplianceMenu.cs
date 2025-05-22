@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace KitchenApplianceShop
 {
-    public class ApplianceMenu<T> : KLMenu<T>
+    public class ApplianceMenu : KLMenu
     {
 
         private Option<string> GroupSelector;
@@ -64,23 +64,51 @@ namespace KitchenApplianceShop
                 ApplianceId = value;
             };
 
+            if (!Enum.TryParse(Main.PrefManager.Get<string>(Main.SPAWN_AT_ID), out SpawnPositionType positionType))
+            {
+                positionType = default;
+            }
+            if (!Enum.TryParse(Main.PrefManager.Get<string>(Main.APPLIANCE_SPAWN_AS_ID), out SpawnApplianceMode applianceMode))
+                applianceMode = default;
+
             AddButton("Order", delegate
             {
-                if (!Enum.TryParse(Main.PrefManager.Get<string>(Main.SPAWN_AT_ID), out SpawnPositionType positionType))
-                {
-                    positionType = default;
-                }              
-                SpawnRequestSystem.Request<KitchenData.Appliance>(ApplianceId, positionType, 0, SpawnApplianceMode.Parcel);                              
-            });            
-            AddLabel("");
+                SpawnRequestSystem.Request<KitchenData.Appliance>(ApplianceId, positionType, 0, applianceMode);                              
+            });
+            if (Main.wishlistApplianceID != -1) AddLabel("Wishlist SET");
+            AddButton("Wishlist", delegate
+             {
+                 Main.wishlistApplianceID = ApplianceId;
+                 Redraw(variants);
+                 return;
+             });
+            
 #if DEBUG
             AddButton("Cheat Toggle DEBUG", delegate
              {
                  ApplianceShopSystem.GoCheat = true;
              });
 #endif
-            ApplianceId = variants.Keys.First();
 
+            ApplianceId = variants.Keys.First();
+            AddLabel($"50% Off Sale Parcel, No $30 Fee, Just pay tax!");
+            if (Main.saleApplianceID != -1)
+            {
+                int saleAppliancePrice = (int)(SpawnHandlerSystemBase.GetKnownPrice(Main.EntityManager, Main.saleApplianceID) * Main.PrefManager.Get<float>(Main.APPLIANCE_BLUEPRINT_COST_ID) * Main.salePrices);                
+                AddButton($"{Main.saleApplianceName} for ${saleAppliancePrice}", delegate
+                 {
+                     SpawnRequestSystem.Request<KitchenData.Appliance>(Main.saleApplianceID, positionType, 0, SpawnApplianceMode.Parcel);
+                     Redraw(variants);
+                     return;
+                 });
+            }
+            else
+            {
+                AddButton($"{Main.saleApplianceName} IS SOLD OUT!", delegate
+                {
+
+                });
+            }
         }
 
     }

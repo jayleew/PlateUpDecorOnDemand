@@ -28,7 +28,7 @@ namespace KitchenApplianceShop.Patches
                 CItemProvider provider = CItemProvider.InfiniteItemProvider(item.ID);
                 f_Item?.SetValueDirect(__makeref(provider), item.ID);
                 item.DedicatedProvider.Properties.Add(provider);
-                Main.LogInfo($"Populated CItemProvider for {item.name} in dedicated provider ({item.DedicatedProvider.name})");
+                Main.LogInfo($"Populated CItemProvider for {item.name} in dedicated provider ({item.DedicatedProvider.name})");                   
             }
         }
     }

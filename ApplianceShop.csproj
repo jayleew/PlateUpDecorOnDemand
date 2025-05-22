@@ -19,7 +19,7 @@
 		<!-- 
 		this if your mod.assets is located elsewhere than the default location -->
 		<AssetBundlePath>$(ProjectDir)content\mod.assets</AssetBundlePath>
-		<RootNamespace>ApplianceShop</RootNamespace>
+		<RootNamespace>KitchenApplianceShop</RootNamespace>
 	</PropertyGroup>
 	
 	<!-- Exclude build artifacts and Unity project -->
@@ -39,7 +39,11 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <Compile Remove="Patches\LocalViewRouter_Patch.cs" />
+	  <Compile Remove="Patches\NumberOfPlayers.cs" />
 	  <Compile Remove="SpawnRequestView.cs" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Content Include="Patches\NumberOfPlayers.cs" />
 	</ItemGroup>
 	<ItemGroup>
 	  <None Include="Patches\LocalViewRouter_Patch.cs" />
@@ -47,13 +51,10 @@
 	</ItemGroup>
   
 	<ItemGroup>
-		<PackageReference Include="MessagePack.Annotations" Version="2.4.59" />
-		<PackageReference Include="Yariazen.PlateUp.ModBuildUtilities" Version="1.6.16" />
+		<PackageReference Include="MessagePack.Annotations" Version="3.1.3" />
+		<PackageReference Include="Yariazen.PlateUp.ModBuildUtilities" Version="1.13.0" />
 	
 		<!-- For if you build KitchenLib locally -->
-		<Reference Include="KitchenLib">
-			<HintPath>$(GamePath)\Mods\KitchenLib\content\KitchenLib-Workshop.dll</HintPath>
-		</Reference>
 	</ItemGroup>
 
 	<Target Name="BundleWorkshop" AfterTargets="Build" Condition="$(EnableModDeployLocal) == 'true'">

@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using Kitchen;
 using KitchenLib;
+using KitchenLib.UI.PlateUp.PreferenceMenus;
 using KitchenLib.Event;
 using KitchenData;
 using KitchenApplianceShop.Utils;
@@ -18,11 +19,12 @@ using UnityEngine;
 // Namespace should have "Kitchen" in the beginning
 namespace KitchenApplianceShop
 {
-    public class Main : IModInitializer
+    public class Main : BaseMod, IModInitializer
     {
         public const string MOD_GUID = "jayleew.plateup.applianceshop";
         public const string MOD_NAME = "Appliance Shop";
-        public const string MOD_VERSION = "0.2.9";
+        public const string MOD_VERSION = "0.2.10";
+        public const string MOD_GAMEVERSION = "";
 
         internal const string MENU_START_OPEN_ID = "menuStartOpen";
         internal const string MENU_START_TAB_ID = "menuStartTab";
@@ -30,8 +32,26 @@ namespace KitchenApplianceShop
         internal const string APPLIANCE_SPAWN_AS_ID = "applianceSpawnAs";
         internal const string APPLIANCE_BLUEPRINT_COST_ID = "applianceBlueprintCost";
         internal const string SHOP_SERVICEFEE_ID = "shopServiceFee";
+        internal const string SHOP_TAX_ID = "shopTaxRate";
         internal const string SPAWN_AT_ID = "spawnAt";
+        internal const string REWARDS_MULTIPLIER = "rewardsMultiplier";
+        internal const string REWARDS_BOOST_PLAYERCOUNT = "rewardsByPlayerCount";
+        internal const string DEVELOPER_LOGGING_LEVEL = "developerLoggingLevel";
+
         internal static PreferenceSystemManager PrefManager;
+        internal static readonly float salePrices = 0.5f;
+        internal static readonly float[] blueprintCostMultiplier = new float[] { 0, 0.5f, 1, 1.5f, 2 };
+        internal static readonly float[] rewardsMultiplierValues = new float[] { 1.25f, 1.5f, 1.75f, 2.0f };
+        internal static readonly string[] rewardsMultiplerLabels = new string[] { "Vanilla", "2X", "3X", "4X" };
+
+        internal static int purchaseNumber = 0;
+        internal static int numberOfPlayers = 0;
+        internal static bool isComplete = false;
+        internal static int wishlistApplianceID = -1;
+        internal static int bookingDesk;
+
+        //hiding the base entitymanager just cause im dumb. don't know if it just needs to be instantiated
+        internal static new Unity.Entities.EntityManager EntityManager { get; set; }
 
         internal static ViewType SpawnRequestViewType = (ViewType)Main.GetInt32HashCode("SpawnRequestViewType");
 
@@ -43,9 +63,12 @@ namespace KitchenApplianceShop
 
         public const int DisabledEntityID = 1836107598;
         public static string DisabledEntityName;
-        internal static int AppliancePurchases; 
-        public Main()
-        {
+        internal static int AppliancePurchases;
+        internal static int saleApplianceID = KitchenLib.References.ApplianceReferences.BlueprintCabinet;
+        internal static string saleApplianceName = "Blueprint Cabinet";
+
+        public Main() : base(MOD_GUID, MOD_NAME, "jayleew", MOD_VERSION, $"{MOD_GAMEVERSION}", Assembly.GetExecutingAssembly())
+        {            
             if (harmony == null)
                 harmony = new Harmony(MOD_GUID);
             Assembly assembly = Assembly.GetExecutingAssembly();
@@ -56,12 +79,50 @@ namespace KitchenApplianceShop
             }
         }
 
+        public static void PickNewSaleAppliance()
+        {
+            //pick a new item on sale
+            int categoryIndex = UnityEngine.Random.Range(0, Main.LoadedAvailableAppliances.Count);
+            int i = 0;
+            bool shouldChooseWishlist = UnityEngine.Random.Range(1, 13) < 5 && wishlistApplianceID != -1;
+
+            if (shouldChooseWishlist) categoryIndex = -1;//don't choose a random category
+
+            foreach (var category in Main.LoadedAvailableAppliances)
+            {
+                if (i == categoryIndex || shouldChooseWishlist && category.Value.ContainsKey(wishlistApplianceID))
+                //then this category index is the one selected or contains a wishlisted appliance
+                {
+                    LogInfo($"Have I found a wishlist category? {category.Value.ContainsKey(wishlistApplianceID)}");
+                    int itemIndex = UnityEngine.Random.Range(0, category.Value.Count);
+                    LogInfo($"{itemIndex} was selected");
+                    int j = 0;
+                    foreach (var appliance in category.Value)
+                    {
+                        if (j == itemIndex)
+                        {
+                            LogInfo($"{appliance.Value} will be on sale today!");
+                            saleApplianceID = appliance.Key;
+                            saleApplianceName = appliance.Value;
+                            if (shouldChooseWishlist) wishlistApplianceID = -1;
+                            break;
+                        }
+                        j++;
+                    }
+                    break;
+                }
+                else i++;
+            }
+        }
+
         public void PostActivate(KitchenMods.Mod mod)
         {
-            LogWarning($"{MOD_GUID} v{MOD_VERSION} in use!");            
+            LogWarning($"{MOD_GUID} v{MOD_VERSION} in use!");
 
             PrefManager = new PreferenceSystemManager(MOD_GUID, MOD_NAME);
             PrefManager
+            #region Host Options
+            #region Spawn At Location
                 .AddConditionalBlocker(() => Session.CurrentGameNetworkMode != GameNetworkMode.Host)
                     .AddLabel("Spawn At")
                     .AddOption<string>(
@@ -69,7 +130,9 @@ namespace KitchenApplianceShop
                         SpawnPositionType.Door.ToString(),
                         Enum.GetNames(typeof(SpawnPositionType)),
                         Enum.GetNames(typeof(SpawnPositionType)))
+            #endregion
                     .AddSpacer()
+            #region Appliance SubMenu
                     .AddSubmenu("Appliance", "appliance")
                         .AddLabel("Spawn As")
                         .AddOption<string>(
@@ -81,21 +144,45 @@ namespace KitchenApplianceShop
                         .AddOption<float>(
                             APPLIANCE_BLUEPRINT_COST_ID,
                             0,
-                            new float[] { 0, 0.5f, 1, 1.5f, 2 },
+                            blueprintCostMultiplier,
                             new string[] { "Free", "Half Price", "Original Price", "One&One Half", "Double Price" })
                         .AddSpacer()
                         .AddLabel("Shop Service Fee")
                         .AddOption<float>(
                             SHOP_SERVICEFEE_ID,
                             0,
-                            new float[] { 0, 0.1f, 0.2f },
-                            new string[] { "30", "30 + 10% Tax", "30 + 20% Tax" })                        
+                            new float[] { 0, 10f, 20f, 30f },
+                            new string[] { "No Fee", "10", "20", "30" })
                         .AddSpacer()
+                        .AddOption<float>(
+                            SHOP_TAX_ID,
+                            0,
+                            new float[] { 0, 0.1f, 0.2f },
+                            new string[] { "No Tax", "10% Tax", "20% Tax" })
                         .AddSpacer()
                     .SubmenuDone()
+            #endregion
+            #region Difficulty Settings
+                    .AddSubmenu("Difficulty Settings", "difficulty")
+                    .AddLabel("Rewards Multiplier")
+                    .AddOption<float>(REWARDS_MULTIPLIER, rewardsMultiplierValues[0], rewardsMultiplierValues, rewardsMultiplerLabels)
+                    .AddSpacer()
+                    .AddLabel("Boost for number of players")
+                    .AddOption<bool>(REWARDS_BOOST_PLAYERCOUNT, false, new bool[] { true, false }, new string[] { "True", "False" })
+                    .AddSpacer()
+                    .SubmenuDone()
+            #endregion
+            #region Developer
+                    .AddSubmenu("Developer Options", "developer")
+                    .AddLabel("Logging (Update EOD)")
+                    .AddOption<int>(DEVELOPER_LOGGING_LEVEL, 1, new int[] { 1, 2, 3 }, new string[] { "Errors Only", "Add Warnings", "Everything" })
+                    .AddSpacer()
+                    .SubmenuDone()
+            #endregion
+            #region Decor SubMenu
                     .AddSubmenu("Decor", "decor")
                         .AddButtonWithConfirm("Remove Applied Decor", "Strip applied wallpapers and flooring? This only works for the host.",
-                            delegate(GenericChoiceDecision decision)
+                            delegate (GenericChoiceDecision decision)
                             {
                                 if (Session.CurrentGameNetworkMode == GameNetworkMode.Host && decision == GenericChoiceDecision.Accept)
                                 {
@@ -105,8 +192,12 @@ namespace KitchenApplianceShop
                         .AddSpacer()
                         .AddSpacer()
                     .SubmenuDone()
+            #endregion
                     .AddSpacer()
                 .ConditionalBlockerDone()
+            #endregion
+
+            #region Menu Settings SubMenu
                 .AddSubmenu("Menu Settings", "menuSettings")
                     .AddConditionalBlocker(() => Session.CurrentGameNetworkMode != GameNetworkMode.Host)
                         .AddLabel("Can Spawn")
@@ -119,20 +210,26 @@ namespace KitchenApplianceShop
                     .AddSpacer()
                     .AddSpacer()
                 .SubmenuDone()
+            #endregion
                 .AddSpacer()
                 .AddSpacer();
 
             PrefManager.RegisterMenu(PreferenceSystemManager.MenuType.MainMenu);
             PrefManager.RegisterMenu(PreferenceSystemManager.MenuType.PauseMenu);
+            AddGameDataObject<EndOfDayTrackerAppliance>();
+            Debug.Log($"LogLevel set to {Main.PrefManager.Get<int>(Main.DEVELOPER_LOGGING_LEVEL)} from preferences");
+            Main.logLevel = Main.PrefManager.Get<int>(Main.DEVELOPER_LOGGING_LEVEL);
+#if DEBUG
+            Log("DEBUG Binaries Installed.");
+            logLevel = 3;
+#endif
+
+
         }
 
         private void initPauseMenu()
-        {                        
-            ModsPreferencesMenu<PauseMenuAction>.RegisterMenu("Appliance Store", typeof(ApplianceMenu<PauseMenuAction>), typeof(PauseMenuAction));
-            Events.PreferenceMenu_PauseMenu_CreateSubmenusEvent += (s, args) =>
-            {
-                args.Menus.Add(typeof(ApplianceMenu<PauseMenuAction>), new ApplianceMenu<PauseMenuAction>(args.Container, args.Module_list));
-            };            
+        {
+            PauseMenuPreferencesesMenu.RegisterMenu("Appliance Store", typeof(ApplianceMenu));
         }
 
         public void PreInject()
@@ -165,13 +262,15 @@ namespace KitchenApplianceShop
         public void PostInject() { DisabledEntityName = GameData.Main.Get<Appliance>(DisabledEntityID).Name; initPauseMenu(); }
 
         #region Logging
-        public static void LogInfo(string _log) { Debug.Log($"[{MOD_NAME}] " + _log); }
-        public static void LogWarning(string _log) { Debug.LogWarning($"[{MOD_NAME}] " + _log); }
+        public static void LogInfo(string _log) { if (logLevel > 2) Debug.Log($"[{MOD_NAME}] " + _log); }
+        public static void LogWarning(string _log) { if (logLevel >= 2) Debug.LogWarning($"[{MOD_NAME}] " + _log); }
         public static void LogError(string _log) { Debug.LogError($"[{MOD_NAME}] " + _log); }
         public static void LogInfo(object _log) { LogInfo(_log.ToString()); }
         public static void LogWarning(object _log) { LogWarning(_log.ToString()); }
         public static void LogError(object _log) { LogError(_log.ToString()); }
-        #endregion
+
+        internal static int logLevel = 1;//errors only
+#endregion
     }
 
     public class SpawnGUI : MonoBehaviour

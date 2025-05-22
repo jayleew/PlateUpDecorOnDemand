@@ -31,6 +31,7 @@ namespace KitchenApplianceShop
         {
             base.Initialise();
             Players = GetEntityQuery(typeof(CPlayer), typeof(CPosition));
+            Main.EntityManager = EntityManager;
         }
 
         internal static int GetKnownPrice(EntityManager entityManager, int applianceID)
@@ -62,23 +63,50 @@ namespace KitchenApplianceShop
             if (GDOType != null && !SpawnRequestSystem.IsHandled && GDOType == SpawnRequestSystem.Current?.GDO?.GetType())
             {
                 if (HasSingleton<SMoney>())
-                {                    
+                {
+                    int thisPurchaseCost = 0;
+                    float costMultipler = Main.PrefManager.Get<float>(Main.APPLIANCE_BLUEPRINT_COST_ID);
                     var appliancePrice = GetKnownPrice(EntityManager, SpawnRequestSystem.Current.GDO.ID);
-
                     SMoney money = GetSingleton<SMoney>();
-                    int thisPurchaseCost = (int)(money.Amount * Main.PrefManager.Get<float>(Main.SHOP_SERVICEFEE_ID))
-                        + 30
-                        + (int)(appliancePrice * Main.PrefManager.Get<float>(Main.APPLIANCE_BLUEPRINT_COST_ID));                    
+
+                    if (SpawnRequestSystem.Current.GDO.ID == Main.saleApplianceID)
+                        thisPurchaseCost = (int)(money.Amount * Main.PrefManager.Get<float>(Main.SHOP_TAX_ID))
+                        + (int)(appliancePrice * costMultipler * Main.salePrices);
+                    else
+                    {                        
+                        thisPurchaseCost = (int)(money.Amount * Main.PrefManager.Get<float>(Main.SHOP_TAX_ID))
+                            + (int)(Main.PrefManager.Get<float>(Main.SHOP_SERVICEFEE_ID))
+                            + (int)(appliancePrice * costMultipler);
+                        if (Main.PrefManager.Get<SpawnApplianceMode>(Main.APPLIANCE_SPAWN_AS_ID) == SpawnApplianceMode.Blueprint)
+                            thisPurchaseCost -= appliancePrice;
+                        if (thisPurchaseCost < 0) thisPurchaseCost = 0;
+
+                        Main.LogInfo($"Appliance Price:{appliancePrice}");
+                        Main.LogInfo($"Tax: {money.Amount * Main.PrefManager.Get<float>(Main.SHOP_TAX_ID)}");
+                        Main.LogInfo($"Fee: {Main.PrefManager.Get<float>(Main.SHOP_SERVICEFEE_ID)}");
+                        Main.LogInfo($"Money: {money.Amount}");
+                    }
+
+                    if (SpawnRequestSystem.Current.IsFree) thisPurchaseCost = 0;
+
                     if (
                         money.Amount - thisPurchaseCost
                         < 0
                         //|| money.Amount < 250 
                         )
                     {
-                        string description = string.Format("Too expensive.\nAppliance cost = {0}\nSales Tax = {1}\nTotal = {2}"
+                        string description = string.Format("Too expensive.\nAppliance cost = ${0}\nTax and Fees = ${1}\nTotal = ${2}"
                             , (int)(appliancePrice * Main.PrefManager.Get<float>(Main.APPLIANCE_BLUEPRINT_COST_ID))
-                            , (int)(money.Amount * Main.PrefManager.Get<float>(Main.SHOP_SERVICEFEE_ID) + 30)
-                            , thisPurchaseCost);                        
+                            , (int)(money.Amount * Main.PrefManager.Get<float>(Main.SHOP_TAX_ID) 
+                                + Main.PrefManager.Get<float>(Main.SHOP_SERVICEFEE_ID))
+                            , thisPurchaseCost);
+
+                        if (SpawnRequestSystem.Current.GDO.ID == Main.saleApplianceID) description =
+                                string.Format("Too expensive.\nAppliance cost = ${0}(SALE)\nTax = ${1}\nTotal = ${2}"
+                            , (int)(appliancePrice * costMultipler * Main.salePrices)
+                            , (int)(money.Amount * Main.PrefManager.Get<float>(Main.SHOP_TAX_ID))
+                            , thisPurchaseCost);
+
                         ApplianceShopSystem.SelectedApplianceCost = thisPurchaseCost;
                         KitchenLib.UI.GenericPopupManager.CreatePopup("Appliance Shop", description);                        
                         SpawnRequestSystem.RequestHandled();                        
@@ -116,6 +144,8 @@ namespace KitchenApplianceShop
                     default:
                         break;
                 }
+                if (SpawnRequestSystem.Current.GDO.ID == Main.saleApplianceID) Main.saleApplianceID = -1;
+                
                 SpawnRequestSystem.RequestHandled();
                 Spawn(SpawnRequestSystem.Current.GDO, position, SpawnRequestSystem.Current.SpawnApplianceMode);
             }
@@ -129,6 +159,7 @@ namespace KitchenApplianceShop
         public SpawnPositionType PositionType;
         public int InputIdentifier;
         public SpawnApplianceMode SpawnApplianceMode;
+        public bool IsFree;
     }
 
     public class SpawnRequestSystem : GenericSystemBase, IModSystem
@@ -148,7 +179,7 @@ namespace KitchenApplianceShop
             Current = null;
             IsHandled = true;
         }
-        public static void Request<T>(int gdoID, SpawnPositionType positionType, int inputIdentifier = 0, SpawnApplianceMode spawnApplianceMode = default) where T : GameDataObject, new()
+        public static void Request<T>(int gdoID, SpawnPositionType positionType, int inputIdentifier = 0, SpawnApplianceMode spawnApplianceMode = default, bool isFree = false) where T : GameDataObject, new()
         {
             if (gdoID != 0 && GameInfo.CurrentScene == SceneType.Kitchen && GameData.Main.TryGet(gdoID, out T gdo, warn_if_fail: true))
             {
@@ -157,7 +188,8 @@ namespace KitchenApplianceShop
                     GDO = gdo,
                     PositionType = positionType,
                     InputIdentifier = inputIdentifier,
-                    SpawnApplianceMode = spawnApplianceMode
+                    SpawnApplianceMode = spawnApplianceMode,
+                    IsFree = isFree
                 });
             }
         }
