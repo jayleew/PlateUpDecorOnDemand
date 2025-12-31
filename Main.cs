@@ -123,7 +123,7 @@ namespace KitchenApplianceShop
             PrefManager
             #region Host Options
             #region Spawn At Location
-                .AddConditionalBlocker(() => Session.CurrentGameNetworkMode != GameNetworkMode.Host)
+                .AddConditionalBlocker(() => Session.NetworkedPlayState == Platforms.NetworkedPlayState.Host)
                     .AddLabel("Spawn At")
                     .AddOption<string>(
                         SPAWN_AT_ID,
@@ -184,7 +184,7 @@ namespace KitchenApplianceShop
                         .AddButtonWithConfirm("Remove Applied Decor", "Strip applied wallpapers and flooring? This only works for the host.",
                             delegate (GenericChoiceDecision decision)
                             {
-                                if (Session.CurrentGameNetworkMode == GameNetworkMode.Host && decision == GenericChoiceDecision.Accept)
+                                if (Session.NetworkedPlayState == Platforms.NetworkedPlayState.Host && decision == GenericChoiceDecision.Accept)
                                 {
                                     StripRequestSystem.Request();
                                 }
@@ -199,7 +199,7 @@ namespace KitchenApplianceShop
 
             #region Menu Settings SubMenu
                 .AddSubmenu("Menu Settings", "menuSettings")
-                    .AddConditionalBlocker(() => Session.CurrentGameNetworkMode != GameNetworkMode.Host)
+                    .AddConditionalBlocker(() => Session.NetworkedPlayState == Platforms.NetworkedPlayState.Host)
                         .AddLabel("Can Spawn")
                         .AddOption<bool>(
                             HOST_ONLY_ID,
