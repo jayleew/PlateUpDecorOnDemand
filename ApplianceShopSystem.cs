@@ -20,7 +20,6 @@ namespace KitchenApplianceShop
             ApplianceReferences.BlueprintUpgradeDesk,
             ApplianceReferences.CoffeeTable,
             ApplianceReferences.Combiner,
-            ApplianceReferences.Countertop,
             ApplianceReferences.DirtyPlateStack,
             ApplianceReferences.Dumbwaiter,
             //ApplianceReferences.ExtraLife,
@@ -40,10 +39,15 @@ namespace KitchenApplianceShop
             ApplianceReferences.PrepStation,
             ApplianceReferences.RobotMop,
             ApplianceReferences.SinkNormal,
-            ApplianceReferences.TableLarge,
+            ApplianceReferences.TableLarge,            
             ApplianceReferences.UpgradeKit,            
         };
 
+        private static readonly int[] counterAppliances =
+        {
+            ApplianceReferences.Countertop,
+            -773196462, //buffet counter
+        };
 
         private static readonly int[] coffeeAppliances =
         {
@@ -136,6 +140,7 @@ namespace KitchenApplianceShop
             ApplianceReferences.PotStack,
             ApplianceReferences.ServingBoardStack,
             ApplianceReferences.WokStack,
+            ApplianceReferences.ProviderMixingBowls
         };
 
         private static readonly int[] magic = {
@@ -159,6 +164,14 @@ namespace KitchenApplianceShop
             -1688921160 , // Table - Sharing Cauldron
             2000892639 , // Table - Stone
             1492264331 , // Vanishing Circle
+        };
+
+        private static readonly int[] renvotationModTools =
+        {
+            -535389137, //sledgehammer
+            -977432876, //dynamite
+            -40298083, //drill
+            -424119766 //doorstop
         };
 
         protected override void OnUpdate()
@@ -238,11 +251,14 @@ namespace KitchenApplianceShop
             Main.LoadedAvailableAppliances.Add("Magic", CreateApplianceDictionary(magic));
             Main.LoadedAvailableAppliances.Add("Tools", CreateApplianceDictionary(tools));
             Main.LoadedAvailableAppliances.Add("Ingredients", CreateApplianceDictionary(ingredients));
+            var gdo = GDOUtils.GetCustomGameDataObject(renvotationModTools.First());
+            if (gdo!=null) Main.LoadedAvailableAppliances.Add("Renovation", CreateApplianceDictionary(renvotationModTools, true));
+            Main.LoadedAvailableAppliances.Add("Counters", CreateApplianceDictionary(counterAppliances));
 
             Main.LogInfo("Found all appliances");
         }
 
-        private static Dictionary<int, string> CreateApplianceDictionary(int[] applianceIds)
+        private static Dictionary<int, string> CreateApplianceDictionary(int[] applianceIds, bool searchCustomObjects = false)
         {
             var appliances = new Dictionary<int, string>();
 
@@ -250,7 +266,12 @@ namespace KitchenApplianceShop
             {
                 foreach (var applianceId in applianceIds)
                 {
-                    Appliance appliance = (Appliance)GDOUtils.GetExistingGDO(applianceId);
+                    Appliance appliance = null;
+                    
+                    if (searchCustomObjects) { appliance = (Appliance)GDOUtils.GetCustomGameDataObject(applianceId).GameDataObject; }
+                    else appliance = (Appliance)GDOUtils.GetExistingGDO(applianceId);                                        
+
+                    if (renvotationModTools.Contains(applianceId)) Main.LogInfo($"{applianceId} is a renovation appliance. Found={appliance != null}");
                     if (appliance != null && !appliances.ContainsKey(appliance.ID))
                     {
                         appliances.Add(appliance.ID, appliance.Name.Replace("Source -", "").Replace("Provider", ""));

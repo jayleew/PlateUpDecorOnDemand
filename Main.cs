@@ -23,7 +23,7 @@ namespace KitchenApplianceShop
     {
         public const string MOD_GUID = "jayleew.plateup.applianceshop";
         public const string MOD_NAME = "Appliance Shop";
-        public const string MOD_VERSION = "0.2.10";
+        public const string MOD_VERSION = "0.3.10";
         public const string MOD_GAMEVERSION = "";
 
         internal const string MENU_START_OPEN_ID = "menuStartOpen";
