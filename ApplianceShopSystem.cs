@@ -91,6 +91,7 @@ namespace KitchenApplianceShop
             ApplianceReferences.SourceBroccoli,
             ApplianceReferences.SourceBurgerBuns,
             ApplianceReferences.SourceBurgerPatty,
+            IngredientLib.References.GetIngredient("butter"),
             ApplianceReferences.SourceCarrot,
             ApplianceReferences.SourceCheese,
             ApplianceReferences.SourceCherry,
@@ -250,7 +251,7 @@ namespace KitchenApplianceShop
             Main.LoadedAvailableAppliances.Add("Decorations", CreateApplianceDictionary(decorations));         
             Main.LoadedAvailableAppliances.Add("Magic", CreateApplianceDictionary(magic));
             Main.LoadedAvailableAppliances.Add("Tools", CreateApplianceDictionary(tools));
-            Main.LoadedAvailableAppliances.Add("Ingredients", CreateApplianceDictionary(ingredients));
+            Main.LoadedAvailableAppliances.Add("Ingredients", CreateApplianceDictionary(ingredients, true));
             var gdo = GDOUtils.GetCustomGameDataObject(renvotationModTools.First());
             if (gdo!=null) Main.LoadedAvailableAppliances.Add("Renovation", CreateApplianceDictionary(renvotationModTools, true));
             Main.LoadedAvailableAppliances.Add("Counters", CreateApplianceDictionary(counterAppliances));
@@ -268,10 +269,13 @@ namespace KitchenApplianceShop
                 {
                     Appliance appliance = null;
                     
-                    if (searchCustomObjects) { appliance = (Appliance)GDOUtils.GetCustomGameDataObject(applianceId).GameDataObject; }
+                    if (searchCustomObjects) 
+                    { 
+                        appliance = (Appliance)GDOUtils.GetCustomGameDataObject(applianceId).GameDataObject; 
+                        if (appliance == null) appliance = (Appliance)GDOUtils.GetExistingGDO(applianceId);
+                    }
                     else appliance = (Appliance)GDOUtils.GetExistingGDO(applianceId);                                        
 
-                    if (renvotationModTools.Contains(applianceId)) Main.LogInfo($"{applianceId} is a renovation appliance. Found={appliance != null}");
                     if (appliance != null && !appliances.ContainsKey(appliance.ID))
                     {
                         appliances.Add(appliance.ID, appliance.Name.Replace("Source -", "").Replace("Provider", ""));

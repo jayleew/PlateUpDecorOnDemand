@@ -23,7 +23,7 @@ namespace KitchenApplianceShop
     {
         public const string MOD_GUID = "jayleew.plateup.applianceshop";
         public const string MOD_NAME = "Appliance Shop";
-        public const string MOD_VERSION = "0.3.10";
+        public const string MOD_VERSION = "0.3.12";
         public const string MOD_GAMEVERSION = "";
 
         internal const string MENU_START_OPEN_ID = "menuStartOpen";
@@ -85,7 +85,7 @@ namespace KitchenApplianceShop
             int categoryIndex = UnityEngine.Random.Range(0, Main.LoadedAvailableAppliances.Count);
             int i = 0;
             bool shouldChooseWishlist = UnityEngine.Random.Range(1, 13) < 5 && wishlistApplianceID != -1;
-
+            
             if (shouldChooseWishlist) categoryIndex = -1;//don't choose a random category
 
             foreach (var category in Main.LoadedAvailableAppliances)
@@ -104,7 +104,11 @@ namespace KitchenApplianceShop
                             LogInfo($"{appliance.Value} will be on sale today!");
                             saleApplianceID = appliance.Key;
                             saleApplianceName = appliance.Value;
-                            if (shouldChooseWishlist) wishlistApplianceID = -1;
+                            if (shouldChooseWishlist)
+                            {
+                                KitchenLib.UI.GenericPopupManager.CreatePopup("Appliance Shop", "An item from your wishlist category is on sale!");
+                                wishlistApplianceID = -1;
+                            }
                             break;
                         }
                         j++;

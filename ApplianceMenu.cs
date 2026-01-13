@@ -76,7 +76,9 @@ namespace KitchenApplianceShop
                 SpawnRequestSystem.Request<KitchenData.Appliance>(ApplianceId, positionType, 0, applianceMode);                              
             });
             if (Main.wishlistApplianceID != -1) AddLabel("Wishlist SET");
-            AddButton("Wishlist", delegate
+            GroupSelector.TryGetChosen(out string selectedCategory);
+            if (string.IsNullOrEmpty(selectedCategory)) selectedCategory = "the Category";
+            AddButton($"Wishlist {selectedCategory}", delegate
              {
                  Main.wishlistApplianceID = ApplianceId;
                  Redraw(variants);
