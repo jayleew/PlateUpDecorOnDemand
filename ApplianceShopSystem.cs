@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Discord;
 using Kitchen;
 using KitchenData;
 using KitchenLib.References;
@@ -89,9 +90,8 @@ namespace KitchenApplianceShop
             ApplianceReferences.SourceBeans,
             ApplianceReferences.SourceBonedMeat,
             ApplianceReferences.SourceBroccoli,
-            ApplianceReferences.SourceBurgerBuns,
-            ApplianceReferences.SourceBurgerPatty,
-            IngredientLib.References.GetIngredient("butter"),
+            ApplianceReferences.SourceBurgerBuns,            
+            IngredientLib.References.GetProvider("Butter"),
             ApplianceReferences.SourceCarrot,
             ApplianceReferences.SourceCheese,
             ApplianceReferences.SourceCherry,
@@ -110,6 +110,7 @@ namespace KitchenApplianceShop
             ApplianceReferences.SourceOil,
             ApplianceReferences.SourceOlive,
             ApplianceReferences.SourceOnion,
+            ApplianceReferences.SourceBurgerPatty,
             ApplianceReferences.SourcePotato,
             ApplianceReferences.SourcePumpkin,
             ApplianceReferences.SourceRice,
@@ -251,7 +252,7 @@ namespace KitchenApplianceShop
             Main.LoadedAvailableAppliances.Add("Decorations", CreateApplianceDictionary(decorations));         
             Main.LoadedAvailableAppliances.Add("Magic", CreateApplianceDictionary(magic));
             Main.LoadedAvailableAppliances.Add("Tools", CreateApplianceDictionary(tools));
-            Main.LoadedAvailableAppliances.Add("Ingredients", CreateApplianceDictionary(ingredients, true));
+            Main.LoadedAvailableAppliances.Add("Ingredients", CreateApplianceDictionary(ingredients, true,"Ingredients"));
             var gdo = GDOUtils.GetCustomGameDataObject(renvotationModTools.First());
             if (gdo!=null) Main.LoadedAvailableAppliances.Add("Renovation", CreateApplianceDictionary(renvotationModTools, true));
             Main.LoadedAvailableAppliances.Add("Counters", CreateApplianceDictionary(counterAppliances));
@@ -259,31 +260,35 @@ namespace KitchenApplianceShop
             Main.LogInfo("Found all appliances");
         }
 
-        private static Dictionary<int, string> CreateApplianceDictionary(int[] applianceIds, bool searchCustomObjects = false)
+        private static Dictionary<int, string> CreateApplianceDictionary(int[] applianceIds, bool searchCustomObjects = false, string info = "")
         {
             var appliances = new Dictionary<int, string>();
+            Appliance appliance = null;
 
-            try
+            foreach (var applianceId in applianceIds)
             {
-                foreach (var applianceId in applianceIds)
+                try
                 {
-                    Appliance appliance = null;
-                    
-                    if (searchCustomObjects) 
-                    { 
-                        appliance = (Appliance)GDOUtils.GetCustomGameDataObject(applianceId).GameDataObject; 
-                        if (appliance == null) appliance = (Appliance)GDOUtils.GetExistingGDO(applianceId);
+                    if (searchCustomObjects)
+                    {
+                        var customGDO = GDOUtils.GetCustomGameDataObject(applianceId);
+                        if (customGDO == null) appliance = (Appliance)GDOUtils.GetExistingGDO(applianceId);
+                        else appliance = (Appliance)customGDO.GameDataObject;
+                        //(Appliance)GDOUtils.GetCustomGameDataObject(applianceId).GameDataObject;
                     }
-                    else appliance = (Appliance)GDOUtils.GetExistingGDO(applianceId);                                        
+                    else appliance = (Appliance)GDOUtils.GetExistingGDO(applianceId);
 
                     if (appliance != null && !appliances.ContainsKey(appliance.ID))
                     {
                         appliances.Add(appliance.ID, appliance.Name.Replace("Source -", "").Replace("Provider", ""));
                     }
                 }
+                catch (Exception ex)
+                {
+                    Main.LogWarning($"[{Main.MOD_NAME}- Couldn't add appliance because of GDOID {applianceId}. lastGoodAppliance={(appliance != null ? appliance.Name : null)}. Info={info}.  ");
+                    Main.LogError(ex);
+                }
             }
-            catch { };
-
             
             return appliances;
         }

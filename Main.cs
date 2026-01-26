@@ -23,7 +23,7 @@ namespace KitchenApplianceShop
     {
         public const string MOD_GUID = "jayleew.plateup.applianceshop";
         public const string MOD_NAME = "Appliance Shop";
-        public const string MOD_VERSION = "0.3.12";
+        public const string MOD_VERSION = "0.3.14";
         public const string MOD_GAMEVERSION = "";
 
         internal const string MENU_START_OPEN_ID = "menuStartOpen";
@@ -106,8 +106,8 @@ namespace KitchenApplianceShop
                             saleApplianceName = appliance.Value;
                             if (shouldChooseWishlist)
                             {
-                                KitchenLib.UI.GenericPopupManager.CreatePopup("Appliance Shop", "An item from your wishlist category is on sale!");
                                 wishlistApplianceID = -1;
+                                KitchenLib.UI.GenericPopupManager.CreatePopup("Appliance Shop", "An item from your wishlist category is on sale!");                                
                             }
                             break;
                         }
@@ -224,7 +224,7 @@ namespace KitchenApplianceShop
             Debug.Log($"LogLevel set to {Main.PrefManager.Get<int>(Main.DEVELOPER_LOGGING_LEVEL)} from preferences");
             Main.logLevel = Main.PrefManager.Get<int>(Main.DEVELOPER_LOGGING_LEVEL);
 #if DEBUG
-            Log("DEBUG Binaries Installed.");
+            Log($"[{MOD_NAME}] - DEBUG Binaries Installed.");
             logLevel = 3;
 #endif
 
